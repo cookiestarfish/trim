@@ -1,0 +1,3 @@
+[submodule "submodules/AVL"]
+	path = submodules/AVL
+	url = https://github.com/maple301/AVL
