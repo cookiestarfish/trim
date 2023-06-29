@@ -95,7 +95,7 @@ namespace trim::cli
           }
         } else {
           // otherwise split the string at the equal sign
-          // the first part is the optioon name, the second part is the option value
+          // the first part is the option name, the second part is the option value
           std::string_view name = string.substr(0, equal_pos);
           std::string_view value = string.substr(equal_pos + 1);
           return Option {.name = name, .value = value, .ok = true};
