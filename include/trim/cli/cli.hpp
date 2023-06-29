@@ -201,11 +201,10 @@ namespace trim::cli
 
       if(!is_hex_digit(digit))
         return std::nullopt;
-      digit = digit_value(digit);
-      value = value * 16 + digit;
+      value = value * 16 + digit_value(digit);
     }
 
-    return Color_RGB(static_cast<std::uint_least32_t>(value));
+    return Color_RGB(value);
   }
 
   [[nodiscard]] constexpr std::optional<Color_RGB> parse_color_name(std::string_view name) noexcept
