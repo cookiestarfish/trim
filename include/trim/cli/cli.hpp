@@ -1,18 +1,114 @@
 #pragma once
-#include <trim/cli/option.hpp>
-#include <trim/cli/parse.hpp>
-#include <trim/color/parse.hpp>
 #include <trim/color/rgb.hpp>
 #include <trim/style/style.hpp>
+#include <trim/util/assert.hpp>
 
-#include <array>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace trim::cli
 {
+  struct Option
+  {
+    std::string_view name {};
+    std::string_view value {};
+    bool ok {};
+
+    [[nodiscard]] explicit constexpr operator bool() const noexcept
+    {
+      return ok;
+    }
+  };
+
+  struct Parser
+  {
+    std::span<char const* const> args {};
+    bool positional_only {};
+
+    explicit constexpr Parser(std::span<char const* const> args) noexcept
+      : args(args)
+      , positional_only(false)
+    {}
+
+    [[nodiscard]] constexpr std::string_view consume() & noexcept
+    {
+      TRIM_ASSERT(!args.empty());
+
+      std::string_view result = args[0];
+      args = args.subspan(1);
+      return result;
+    }
+
+    [[nodiscard]] constexpr std::string_view peek() const noexcept
+    {
+      if(args.empty())
+        return "";
+      return args[0];
+    }
+
+    [[nodiscard]] constexpr bool done() const noexcept
+    {
+      return args.empty();
+    }
+
+    [[nodiscard]] constexpr Option next() & noexcept
+    {
+      if(args.empty()) {
+        return Option {.ok = false};
+      }
+
+      if(positional_only) {
+        return Option {.name = "", .value = consume(), .ok = true};
+      }
+
+      std::string_view string = consume();
+
+      if(string == "--") {
+        positional_only = true;
+        if(!args.empty()) {
+          return Option {.name = "", .value = consume(), .ok = true};
+        } else {
+          return Option {};
+        }
+      }
+
+      if(string.starts_with("--")) {
+        // try to parse a valued option with equal sign (--input=filename)
+        // or a valued option without equal sign (--input filename)
+        // or a flag (--flag)
+
+        string.remove_prefix(2);
+        std::size_t equal_pos = string.find('=');
+
+        if(equal_pos == string.npos) {
+          // if there is no equal sign
+          // if there is no next option, return a flag
+          // if the next option starts with "--", return a flag
+          // otherwise consider the following string the value for this option
+          if(args.empty() || peek().starts_with("--")) {
+            return Option {.name = string, .value = "", .ok = true};
+          } else {
+            return Option {.name = string, .value = consume(), .ok = true};
+          }
+        } else {
+          // otherwise split the string at the equal sign
+          // the first part is the optioon name, the second part is the option value
+          std::string_view name = string.substr(0, equal_pos);
+          std::string_view value = string.substr(equal_pos + 1);
+          return Option {.name = name, .value = value, .ok = true};
+        }
+      } else if(string.starts_with("-")) {
+        string.remove_prefix(1);
+        return Option {.name = string, .value = "", .ok = true};
+      } else {
+        return Option {.name = "", .value = string, .ok = true};
+      }
+    }
+  };
+
   struct Options
   {
     std::optional<std::string_view> input_file_name {};
@@ -38,317 +134,347 @@ namespace trim::cli
     std::vector<std::string> errors {};
   };
 
-  [[nodiscard]] constexpr bool is_boolean(std::string_view string) noexcept
+  [[nodiscard]] constexpr std::optional<Style> parse_style(std::string_view string) noexcept
   {
-    if(string == "true")
-      return true;
-    if(string == "false")
-      return true;
-    if(string == "0")
-      return true;
-    if(string == "1")
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool is_small_positive_integer(std::string_view string) noexcept
-  {
-    for(char x : string)
-      if(x < '0' || x > '9')
-        return false;
-    if(string.size() > 3)
-      return false;
-    return true;
-  }
-
-  [[nodiscard]] constexpr bool is_color(std::string_view string) noexcept
-  {
-    if(auto test = trim::parse_color_hex(string); test)
-      return true;
-    if(auto test = trim::parse_color_name(string); test)
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool is_text_alignment(std::string_view string) noexcept
-  {
-    if(string == "left")
-      return true;
-    if(string == "right")
-      return true;
-    if(string == "center")
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool is_tree_alignment(std::string_view string) noexcept
-  {
-    if(string == "left")
-      return true;
-    if(string == "right")
-      return true;
-    if(string == "center")
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool is_style(std::string_view string) noexcept
-  {
-    if(string == "default")
-      return true;
-    if(string == "thick")
-      return true;
     if(string == "thin")
-      return true;
-    if(string == "double")
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool is_text_modifier(std::string_view string) noexcept
-  {
-    if(string == "bold")
-      return true;
-    if(string == "underline")
-      return true;
-    if(string == "italic")
-      return true;
-    return false;
-  }
-
-  [[nodiscard]] constexpr bool to_boolean(std::string_view string) noexcept
-  {
-    TRIM_ASSERT(is_boolean(string));
-
-    if(string == "true" || string == "1")
-      return true;
-    if(string == "false" || string == "0")
-      return false;
-
-    TRIM_ASSERT(false);
-  }
-
-  [[nodiscard]] constexpr int to_small_positive_integer(std::string_view string) noexcept
-  {
-    TRIM_ASSERT(is_small_positive_integer(string));
-
-    int result = 0;
-    for(char c : string)
-      result = result * 10 + c - '0';
-    return result;
-  }
-
-  [[nodiscard]] constexpr Color_RGB to_color(std::string_view string) noexcept
-  {
-    TRIM_ASSERT(is_color(string));
-
-    if(auto color = trim::parse_color_hex(string); color)
-      return color.value();
-
-    if(auto color = trim::parse_color_name(string); color)
-      return color.value();
-
-    TRIM_ASSERT(false);
-  }
-
-  [[nodiscard]] constexpr Style to_style(std::string_view string) noexcept
-  {
-    TRIM_ASSERT(is_style(string));
-
-    if(string == "default")
-      return trim::default_style;
-    if(string == "thin")
-      return trim::default_style;
+      return trim::thin_style;
     if(string == "thick")
       return trim::thick_style;
     if(string == "double")
       return trim::double_style;
-
-    TRIM_ASSERT(false);
+    return std::nullopt;
   }
 
-  [[nodiscard]] constexpr Text_Alignment to_text_alignment(std::string_view string) noexcept
+  [[nodiscard]] constexpr std::optional<Tree_Alignment> parse_tree_align(std::string_view string) noexcept
   {
-    TRIM_ASSERT(is_text_alignment(string));
-
-    if(string == "left")
-      return Text_Alignment::LEFT;
-    if(string == "center")
-      return Text_Alignment::CENTER;
-    if(string == "right")
-      return Text_Alignment::RIGHT;
-
-    TRIM_ASSERT(false);
-  }
-
-  [[nodiscard]] constexpr Tree_Alignment to_tree_alignment(std::string_view string) noexcept
-  {
-    TRIM_ASSERT(is_tree_alignment(string));
-
     if(string == "left")
       return Tree_Alignment::LEFT;
     if(string == "center")
       return Tree_Alignment::CENTER;
     if(string == "right")
       return Tree_Alignment::RIGHT;
-
-    TRIM_ASSERT(false);
+    return std::nullopt;
   }
 
-  [[nodiscard]] constexpr Text_Modifier to_text_modifier(std::string_view string) noexcept
+  [[nodiscard]] constexpr std::optional<Text_Alignment> parse_text_align(std::string_view string) noexcept
   {
-    TRIM_ASSERT(is_text_modifier(string));
-
-    if(string == "bold")
-      return Text_Modifier::BOLD;
-    if(string == "italic")
-      return Text_Modifier::ITALIC;
-    if(string == "underline")
-      return Text_Modifier::UNDERLINE;
-
-    TRIM_ASSERT(false);
+    if(string == "left")
+      return Text_Alignment::LEFT;
+    if(string == "center")
+      return Text_Alignment::CENTER;
+    if(string == "right")
+      return Text_Alignment::RIGHT;
+    return std::nullopt;
   }
 
-  [[nodiscard]] constexpr Options parse_arguments(std::span<char const* const> args)
+  [[nodiscard]] constexpr std::optional<Color_RGB> parse_color_hex(std::string_view hex) noexcept
   {
-    Parse_Result const parsed = parse(args);
-    Options result {};
+    auto const is_hex_digit = [](char character) noexcept -> bool {
+      if(character >= 'a' && character <= 'f')
+        return true;
+      if(character >= 'A' && character <= 'F')
+        return true;
+      if(character >= '0' && character <= '9')
+        return true;
+      return false;
+    };
 
-    for(Option const& option : parsed.parsed_arguments()) {
-      if(auto maybe_name = option.name(); maybe_name.has_value()) {
-        std::string_view name = maybe_name.value();
-        auto maybe_value = option.value();
+    auto const digit_value = [](char character) noexcept -> int {
+      if(character >= 'a' && character <= 'f')
+        return character - 'a' + 10;
+      if(character >= 'A' && character <= 'F')
+        return character - 'A' + 10;
+      if(character >= '0' && character <= '9')
+        return character - '0';
+      TRIM_ASSERT(false);
+    };
 
-        if(name == "h" || name == "help") {
-          result.print_help = true;
-          continue;
-        }
+    if(!hex.starts_with("#"))
+      return std::nullopt;
 
-        if(name == "i" || name == "input" || name == "input-file") {
-          if(!maybe_value.has_value()) {
-            result.errors.push_back("Incorrect usage of 'input'. Expected file name.");
-          } else {
-            result.input_file_name = maybe_value.value();
-          }
-          continue;
-        }
+    hex.remove_prefix(1);
+    std::uint_least32_t value = 0;
 
-        if(name == "style") {
-          if(maybe_value.has_value() && is_style(*maybe_value)) {
-            result.style = to_style(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'style'. Expected a style name.");
-          }
-          continue;
-        }
+    while(!hex.empty()) {
+      int digit = hex.front();
+      hex.remove_prefix(1);
 
-        if(name == "text-color") {
-          if(maybe_value.has_value() && is_color(*maybe_value)) {
-            result.text_color = to_color(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'text-color'. Expected a color name or hex value.");
-          }
-          continue;
-        }
+      if(!is_hex_digit(digit))
+        return std::nullopt;
+      digit = digit_value(digit);
+      value = value * 16 + digit;
+    }
 
-        if(name == "box-color") {
-          if(maybe_value.has_value() && is_color(*maybe_value)) {
-            result.box_color = to_color(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'box-color'. Expected a color name or hex value.");
-          }
-          continue;
-        }
+    return Color_RGB(static_cast<std::uint_least32_t>(value));
+  }
 
-        if(name == "branch-color") {
-          if(maybe_value.has_value() && is_color(*maybe_value)) {
-            result.branch_color = to_color(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'branch-color'. Expected a color name or hex value.");
-          }
-          continue;
-        }
+  [[nodiscard]] constexpr std::optional<Color_RGB> parse_color_name(std::string_view name) noexcept
+  {
+    struct Color_Pair
+    {
+      std::string_view name;
+      Color_RGB value;
+    };
 
-        if(name == "tree-align") {
-          if(maybe_value.has_value() && is_tree_alignment(*maybe_value)) {
-            result.tree_align = to_tree_alignment(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'tree-align'. Expected left|right|center.");
-          }
-          continue;
-        }
+    // clang-format off
+    constexpr Color_Pair colors[] = {
+      Color_Pair {"none",               Color_RGB::NONE},
+      Color_Pair {"red",                Color_RGB::RED},
+      Color_Pair {"cherryred",          Color_RGB::CHERRY_RED},
+      Color_Pair {"bubblegumpink",      Color_RGB::BUBBLEGUM_PINK},
+      Color_Pair {"green",              Color_RGB::GREEN},
+      Color_Pair {"blue",               Color_RGB::BLUE},
+      Color_Pair {"black",              Color_RGB::BLACK},
+      Color_Pair {"white",              Color_RGB::WHITE},
+      Color_Pair {"gray",               Color_RGB::GRAY},
+      Color_Pair {"pink",               Color_RGB::PINK},
+      Color_Pair {"purple",             Color_RGB::PURPLE},
+      Color_Pair {"cyan",               Color_RGB::CYAN},
+      Color_Pair {"brown",              Color_RGB::BROWN},
+      Color_Pair {"peach",              Color_RGB::PEACH},
+      Color_Pair {"yellow",             Color_RGB::YELLOW},
+      Color_Pair {"orange",             Color_RGB::ORANGE},
+      Color_Pair {"burntorange",        Color_RGB::BURNT_ORANGE},
+      Color_Pair {"rainbow",            Color_RGB::RAINBOW}
+    };
+    // clang-format on
 
-        if(name == "text-align") {
-          if(maybe_value.has_value() && is_text_alignment(*maybe_value)) {
-            result.text_align = to_text_alignment(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'text-align'. Expected left|right|center.");
-          }
-          continue;
-        }
-
-        if(name == "level-margin") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.level_margin = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'level-margin'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        if(name == "sibling-margin") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.sibling_margin = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'sibling-margin'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        if(name == "vertical-padding") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.vertical_padding = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'vertical-padding'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        if(name == "horizontal-padding") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.horizontal_padding = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'horizontal-padding'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        if(name == "node-min-width") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.node_min_width = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'node-min-width'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        if(name == "node-min-height") {
-          if(maybe_value.has_value() && is_small_positive_integer(*maybe_value)) {
-            result.node_min_height = to_small_positive_integer(*maybe_value);
-          } else {
-            result.errors.push_back("Incorrect usage of 'node-min-height'. Expected a small positive integer.");
-          }
-          continue;
-        }
-
-        result.errors.push_back("Unrecognized argument " + std::string(name));
-      } else {
-        result.positional_input = option.value().value();
+    for(Color_Pair const& color : colors) {
+      if(name == color.name) {
+        return color.value;
       }
     }
 
-    for(std::string_view unparsed_argument : parsed.unparsed_arguments()) {
-      result.errors.push_back("Unparsed argument '" + std::string(unparsed_argument) + "'");
+    return std::nullopt;
+  }
+
+  [[nodiscard]] constexpr std::optional<Color_RGB> parse_color(std::string_view string) noexcept
+  {
+    if(auto result = parse_color_hex(string); result)
+      return result;
+    return parse_color_name(string);
+  }
+
+  [[nodiscard]] constexpr std::optional<int> parse_small_positive_int(std::string_view string) noexcept
+  {
+    int result = 0;
+    for(char c : string) {
+      if(c < '0' || c > '9') {
+        return std::nullopt;
+      } else {
+        result = result * 10 + c - '0';
+
+        if(result > 1000)
+          return std::nullopt;
+      }
+    }
+
+    return result;
+  }
+
+  [[nodiscard]] constexpr Options parse_args(std::span<char const* const> args)
+  {
+    Parser parser = Parser(args);
+    Options result {};
+
+    enum class OptionKind
+    {
+      NONE,
+      HELP,
+      INPUT_FILE,
+      STYLE,
+      TREE_ALIGN,
+      TEXT_ALIGN,
+      TEXT_COLOR,
+      BOX_COLOR,
+      BRANCH_COLOR,
+      LINE_MARGIN,
+      SIBLING_MARGIN,
+      HORIZONTAL_PADDING,
+      VERTICAL_PADDING
+    };
+
+    auto const get_option_kind = [](std::string_view name) -> OptionKind {
+      using enum OptionKind;
+      if(name == "h" || name == "help")
+        return HELP;
+      if(name == "i" || name == "input" || name == "input-file")
+        return INPUT_FILE;
+      if(name == "style")
+        return STYLE;
+      if(name == "tree-align")
+        return TREE_ALIGN;
+      if(name == "text-align")
+        return TEXT_ALIGN;
+      if(name == "text-color")
+        return TEXT_COLOR;
+      if(name == "box-color")
+        return BOX_COLOR;
+      if(name == "branch-color")
+        return BRANCH_COLOR;
+      if(name == "line-margin")
+        return LINE_MARGIN;
+      if(name == "sibling-margin")
+        return SIBLING_MARGIN;
+      if(name == "horizontal-padding")
+        return HORIZONTAL_PADDING;
+      if(name == "vertical-padding")
+        return VERTICAL_PADDING;
+      return NONE;
+    };
+
+    using namespace std::string_view_literals;
+    using namespace std::string_literals;
+
+    while(!parser.done()) {
+      if(Option option = parser.next(); option) {
+        if(option.name == "") {
+          // positional argument
+          result.positional_input = option.value;
+          continue;
+        }
+
+        // otherwise it's a named option
+        switch(get_option_kind(option.name)) {
+          case OptionKind::NONE: {
+            result.errors.push_back("Unrecognized option '"s + std::string(option.name) + "'");
+            break;
+          }
+          case OptionKind::HELP: {
+            result.print_help = true;
+            break;
+          }
+          case OptionKind::INPUT_FILE: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --input-file. Expected a file name.";
+              result.errors.push_back(std::move(message));
+            } else {
+              result.input_file_name = option.value;
+            }
+            break;
+          }
+          case OptionKind::STYLE: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --style. Expected a style name.";
+              result.errors.push_back(std::move(message));
+            } else if(auto maybe_style = parse_style(option.value); maybe_style) {
+              result.style = *maybe_style;
+            } else {
+              std::string message = "Invalid usage of --style. Unrecognized style '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::TREE_ALIGN: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --tree-align. Expected left|center|right.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<Tree_Alignment> maybe_align = parse_tree_align(option.value); maybe_align) {
+              result.tree_align = *maybe_align;
+            } else {
+              std::string message = "Invalid usage of --tree-align. Unrecognized alignment '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::TEXT_ALIGN: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --text-align. Expected left|center|right.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<Text_Alignment> maybe_align = parse_text_align(option.value); maybe_align) {
+              result.text_align = *maybe_align;
+            } else {
+              std::string message = "Invalid usage of --text-align. Unrecognized alignment '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::TEXT_COLOR: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --text-color. Expected a color name or hex value.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<Color_RGB> maybe_color = parse_color(option.value); maybe_color) {
+              result.text_color = *maybe_color;
+            } else {
+              std::string message = "Invalid usage of --text-color. Unrecognized color '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::BOX_COLOR: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --box-color. Expected a color name or hex value.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<Color_RGB> maybe_color = parse_color(option.value); maybe_color) {
+              result.box_color = *maybe_color;
+            } else {
+              std::string message = "Invalid usage of --box-color. Unrecognized color '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::BRANCH_COLOR: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --branch-color. Expected a color name or hex value.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<Color_RGB> maybe_color = parse_color(option.value); maybe_color) {
+              result.branch_color = *maybe_color;
+            } else {
+              std::string message = "Invalid usage of --branch-color. Unrecognized color '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::LINE_MARGIN: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --line-margin. Expected a positive integer < 1000.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<int> maybe_int = parse_small_positive_int(option.value); maybe_int) {
+              result.level_margin = *maybe_int;
+            } else {
+              std::string message = "Invalid usage of --line-margin. Not valid: '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::SIBLING_MARGIN: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --sibling-margin. Expected a positive integer < 1000.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<int> maybe_int = parse_small_positive_int(option.value); maybe_int) {
+              result.sibling_margin = *maybe_int;
+            } else {
+              std::string message = "Invalid usage of --sibling-margin. Not valid: '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::HORIZONTAL_PADDING: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --horizontal-padding. Expected a positive integer < 1000.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<int> maybe_int = parse_small_positive_int(option.value); maybe_int) {
+              result.horizontal_padding = *maybe_int;
+            } else {
+              std::string message = "Invalid usage of --horizontal-padding. Not valid: '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+          case OptionKind::VERTICAL_PADDING: {
+            if(option.value == "") {
+              std::string message = "Invalid usage of --vertical-padding. Expected a positive integer < 1000.";
+              result.errors.push_back(std::move(message));
+            } else if(std::optional<int> maybe_int = parse_small_positive_int(option.value); maybe_int) {
+              result.vertical_padding = *maybe_int;
+            } else {
+              std::string message = "Invalid usage of --vertical-padding. Not valid: '"s + std::string(option.value) + "'.";
+              result.errors.push_back(std::move(message));
+            }
+            break;
+          }
+        }
+      }
     }
 
     return result;

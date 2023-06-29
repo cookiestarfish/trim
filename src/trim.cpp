@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   arg_span args = arg_span(argv + 1, argc - 1);
 
   // parse command line arguments
-  trim::cli::Options cli = trim::cli::parse_arguments(args);
+  trim::cli::Options cli = trim::cli::parse_args(args);
 
   // print help
   if(cli.print_help) {
