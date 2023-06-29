@@ -1,0 +1,269 @@
+---
+
+# --------------
+# === COMMON ===
+
+Language: Cpp
+TabWidth: 0
+Standard: Latest
+UseTab: Never
+
+# -----------------
+# === VERSION 3 ===
+
+AccessModifierOffset: 0
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: true
+BinPackArguments: true
+BinPackParameters: true
+BreakBeforeTernaryOperators: false
+BreakStringLiterals: true
+ColumnLimit: 160
+CommentPragmas: ""
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+DisableFormat: false
+ExperimentalAutoDetectBinPacking: false
+ForEachMacros: []
+IndentCaseLabels: true
+IndentWidth: 2
+IndentWrappedFunctionNames: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+MacroBlockBegin: ""
+MacroBlockEnd: ""
+MaxEmptyLinesToKeep: 1
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Possible values: Align, DontAlign, AlwaysBreak, BlockIndent
+AlignAfterOpenBracket: Align
+
+# Possible values: Align, DontAlign, AlignAfterOperator
+AlignOperands: Align
+
+# Possible values: Never, Empty, Always
+AllowShortBlocksOnASingleLine: Empty
+
+# Possible values: None, InlineOnly, Empty, Inline, All
+AllowShortFunctionsOnASingleLine: None
+
+# Possible values: Never, WithoutElse, OnlyFirstIf, AllIfsAndElse
+AllowShortIfStatementsOnASingleLine: Never
+
+# Possible values: None, All, TopLevel, AllDefinitions, TopLevelDefinitions
+AlwaysBreakAfterReturnType: None
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  # Possible values: Never, Always, MultiLine
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Possible values: None, NonAssignment, All
+BreakBeforeBinaryOperators: None
+
+# Possible values: Left, Right, Middle
+PointerAlignment: Left
+
+# Possible values: Never, ControlStatements, ControlStatementsExceptControlMacros, NonEmptyParentheses, Always
+SpaceBeforeParens: Never
+
+# Possible values: Never, Always, Leave
+SpacesInAngles: Never
+
+# Possible values: None, Inner, All
+NamespaceIndentation: All
+
+# -----------------
+# === VERSION 4 ===
+
+ReflowComments: true
+SpaceAfterTemplateKeyword: false
+
+# -----------------
+# === VERSION 5 ===
+
+CompactNamespaces: false
+FixNamespaceComments: true
+SortUsingDeclarations: true
+
+# Possible values: None, Left, Right
+AlignEscapedNewlines: Right
+
+# Possible values: BeforeColon, BeforeComma, AfterColon, AfterComma
+BreakConstructorInitializers: BeforeComma
+
+# -----------------
+# === VERSION 6 ===
+
+RawStringFormats: []
+
+# Possible values: None, AfterHash, BeforeHash
+IndentPPDirectives: AfterHash
+
+# -----------------
+# === VERSION 7 ===
+
+IncludeCategories: []
+IncludeIsMainRegex: ""
+IncludeIsMainSourceRegex: ""
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+
+# Possible values: No, MultiLine, Yes
+AlwaysBreakTemplateDeclarations: Yes
+
+# Possible values: BeforeColon, BeforeComma, AfterColon, AfterComma
+BreakInheritanceList: BeforeComma
+
+# Possible values: Preserve, Merge, Regroup
+IncludeBlocks: Preserve
+
+# -----------------
+# === VERSION 8 ===
+
+StatementMacros: ["ML_ASSERT"]
+
+# -----------------
+# === VERSION 9 ===
+
+AllowAllArgumentsOnNextLine: false
+AllowShortLambdasOnASingleLine: false
+NamespaceMacros: []
+TypenameMacros: []
+SpaceAfterLogicalNot: false
+
+# Possible values: None, Consecutive, AcrossEmptyLines, AcrossComments, AcrossEmptyLinesAndComments
+AlignConsecutiveMacros: Consecutive
+
+# ------------------
+# === VERSION 10 ===
+
+DeriveLineEnding: true
+IndentGotoLabels: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpacesInConditionalStatement: false
+UseCRLF: false
+
+# ------------------
+# === VERSION 11 ===
+
+AllowShortEnumsOnASingleLine: true
+IndentCaseBlocks: false
+IndentExternBlock: true
+WhitespaceSensitiveMacros: []
+
+# Possible values: None, Consecutive, AcrossEmptyLines, AcrossComments, AcrossEmptyLinesAndComments
+AlignConsecutiveBitFields: Consecutive
+
+# ------------------
+# === VERSION 12 ===
+
+AttributeMacros: []
+IndentRequires: true
+SpaceBeforeCaseColon: false
+
+# Possible values: Both, None, Before, After
+BitFieldColonSpacing: After
+
+# Possible values: Never, Always, Allowed
+BreakBeforeConceptDeclarations: true
+
+# Possible values: Never, Leave, LogicalBlock, Always
+EmptyLineBeforeAccessModifier: Always
+
+# Possible values: Default, Before, After, Both
+SpaceAroundPointerQualifiers: Default
+
+# ------------------
+# === VERSION 13 ===
+
+ShortNamespaceLines: 1
+PPIndentWidth: 2
+IfMacros: []
+IndentAccessModifiers: false
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
+
+# Possible values: None, Left, Right
+# ArrayInitializerAlignment: Right
+
+# Possible values: Never, Leave, Always
+EmptyLineAfterAccessModifier: Always
+
+# Possible values: Signature, OuterScope
+LambdaBodyIndentation: OuterScope
+
+# Possible values: Pointer, Left, Right, Middle
+ReferenceAlignment: Left
+
+# ------------------
+# === VERSION 14 ===
+
+# Possible values: Never, BinPack, CurrentLine, NextLine
+PackConstructorInitializers: Never
+
+# Possible values: Leave, Left, Right, Custom
+QualifierAlignment: Right
+
+# Possible values: Leave, Always, Never
+SeparateDefinitionBlocks: Always
+
+# Possible values: Custom
+SpaceBeforeParensOptions: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: false
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: false
+  AfterOverloadedOperator: false
+  # AfterRequiresInClause: true
+  # AfterRequiresInExpression: true
+  BeforeNonEmptyParentheses: false
+
+# QualifierOrder: []
+RemoveBracesLLVM: false
+
+# ------------------
+# === VERSION 15 ===
+
+# RequiresClausePosition: OwnLine
+# IndentRequiresClause: true
+
+# ------------------
+# === VERSION 16 ===
+
+# RequiresExpressionIndentation: OuterScope
