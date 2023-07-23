@@ -16,7 +16,7 @@ namespace trim
    * Example:
    * Given the following tree
    * The left contour nodes are [0, 1, 2, 6]
-   * The right contour nodes are [0, 6, 8, 7]
+   * The right contour nodes are [0, 8, 10, 7]
    *
    *               ┌───┐
    *               | 0 |
